@@ -1,10 +1,11 @@
+import os
+os.environ['GRPC_PYTHON_LOG_LEVEL'] = 'error'
 import streamlit as st
 import google.generativeai as genai
 import pandas as pd
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from collections import Counter
-import os
 import time
 from google.api_core.exceptions import ResourceExhausted
 import requests
@@ -12,10 +13,6 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import PyPDF2
 import io
-
-# 設置 Google API 金鑰
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-genai.configure(api_key=GOOGLE_API_KEY)
 
 # 初始化 Gemini 模型
 try:
