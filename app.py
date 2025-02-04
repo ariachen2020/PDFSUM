@@ -30,10 +30,25 @@ except Exception as e:
     st.error(f"模型初始化失败: {str(e)}")
     model = None
 
-def analyze_text(text):
+def initialize_model(api_key):
+    """初始化 Gemini 模型"""
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-pro',
+                                    generation_config={
+                                        'temperature': 0.7,
+                                        'top_p': 0.8,
+                                        'top_k': 40,
+                                        'max_output_tokens': 2048,
+                                    })
+        return model
+    except Exception as e:
+        return None
+
+def analyze_text(text, model):
     """使用 Gemini 分析文字"""
     if model is None:
-        return "模型初始化失败，请刷新页面重试"
+        return "模型初始化失败，请检查 API Key"
         
     prompt = f"""
     請分析以下文字，並提供:
@@ -52,13 +67,11 @@ def analyze_text(text):
         try:
             response = model.generate_content(prompt)
             return response.text
-        except ResourceExhausted:
+        except Exception as e:
             if attempt == max_retries - 1:
-                return "API 配额已达上限，请稍后再试。"
+                return f"分析过程发生错误: {str(e)}"
             time.sleep(retry_delay)
             continue
-        except Exception as e:
-            return f"分析过程发生错误: {str(e)}"
 
 def generate_word_frequency(text):
     """生成文字頻率統計"""
@@ -124,6 +137,19 @@ def extract_pdf_text(pdf_file):
 def main():
     st.title("文字分析工具")
     
+    # API Key 输入区域
+    api_key = st.sidebar.text_input("输入 Google API Key:", type="password")
+    if not api_key:
+        st.warning("请先输入 Google API Key")
+        st.info("获取 API Key 的步骤：\n1. 访问 [Google AI Studio](https://makersuite.google.com/app/apikey)\n2. 登录并创建 API Key")
+        return
+    
+    # 初始化模型
+    model = initialize_model(api_key)
+    if model is None:
+        st.error("API Key 无效或初始化失败")
+        return
+    
     # 输入区域
     input_type = st.radio("选择输入方式:", ["直接输入文字", "输入网址", "上传PDF文件"])
     
@@ -153,32 +179,9 @@ def main():
                     st.text(text[:500] + "...")
     
     if st.button("开始分析") and 'text' in locals() and text:
-        with st.spinner("分析中..."):
-            # AI 分析
-            analysis_result = analyze_text(text)
-            
-            # 顯示分析結果
-            st.subheader("AI 分析結果")
-            st.write(analysis_result)
-            
-            # 生成並顯示文字雲
-            st.subheader("文字雲視覺化")
-            fig = create_wordcloud(text)
-            st.pyplot(fig)
-            
-            # 生成並顯示詞頻統計
-            st.subheader("詞頻統計")
-            word_freq = generate_word_frequency(text)
-            freq_df = pd.DataFrame(list(word_freq.items()), columns=['詞語', '頻率'])
-            st.bar_chart(freq_df.set_index('詞語'))
-            
-            # 下載功能
-            st.download_button(
-                label="下載分析結果",
-                data=f"分析結果:\n{analysis_result}\n\n詞頻統計:\n{freq_df.to_csv(index=False)}",
-                file_name="analysis_result.txt",
-                mime="text/plain"
-            )
+        with st.spinner("正在分析中..."):
+            result = analyze_text(text, model)  # 传入 model 参数
+            st.write(result)
 
 if __name__ == "__main__":
     main() 
