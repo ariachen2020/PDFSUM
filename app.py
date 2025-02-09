@@ -131,6 +131,24 @@ def extract_pdf_text(pdf_file):
     except Exception as e:
         return None, f"PDF处理失败: {str(e)}"
 
+def batch_analyze_pdfs(files, model):
+    """批量分析多個PDF文件"""
+    results = {}
+    for file in files:
+        try:
+            text, error = extract_pdf_text(file)
+            if error:
+                results[file.name] = f"處理失敗: {error}"
+                continue
+                
+            analysis = analyze_text(text, model)
+            results[file.name] = analysis
+            
+        except Exception as e:
+            results[file.name] = f"處理失敗: {str(e)}"
+    
+    return results
+
 def main():
     st.title("文字分析工具")
     
@@ -148,37 +166,80 @@ def main():
         return
     
     # 输入区域
-    input_type = st.radio("选择输入方式:", ["直接输入文字", "输入网址", "上传PDF文件"])
+    input_type = st.radio("选择输入方式:", ["直接输入文字", "输入网址", "上传PDF文件", "批量处理PDF"])
     
     if input_type == "直接输入文字":
         text = st.text_area("请输入要分析的文字:", height=200)
+        if st.button("开始分析") and text:
+            with st.spinner("正在分析中..."):
+                result = analyze_text(text, model)
+                st.write(result)
+                
     elif input_type == "输入网址":
         url = st.text_input("请输入网址:")
-        if url:
-            text, error = get_url_content(url)
-            if error:
-                st.error(error)
-                text = ""
-            else:
-                st.success("成功获取网页内容")
-                with st.expander("预览网页内容"):
-                    st.text(text[:500] + "...")
-    else:  # 上传PDF文件
+        if url and st.button("开始分析"):
+            with st.spinner("获取网页内容..."):
+                text, error = get_url_content(url)
+                if error:
+                    st.error(error)
+                else:
+                    st.success("成功获取网页内容")
+                    with st.expander("预览网页内容"):
+                        st.text(text[:500] + "...")
+                    with st.spinner("正在分析中..."):
+                        result = analyze_text(text, model)
+                        st.write(result)
+                        
+    elif input_type == "上传PDF文件":
         uploaded_file = st.file_uploader("选择PDF文件", type=['pdf'])
-        if uploaded_file:
-            text, error = extract_pdf_text(uploaded_file)
-            if error:
-                st.error(error)
-                text = ""
-            else:
-                st.success("成功读取PDF文件")
-                with st.expander("预览PDF内容"):
-                    st.text(text[:500] + "...")
-    
-    if st.button("开始分析") and 'text' in locals() and text:
-        with st.spinner("正在分析中..."):
-            result = analyze_text(text, model)  # 传入 model 参数
-            st.write(result)
+        if uploaded_file and st.button("开始分析"):
+            with st.spinner("处理PDF文件..."):
+                text, error = extract_pdf_text(uploaded_file)
+                if error:
+                    st.error(error)
+                else:
+                    st.success("成功读取PDF文件")
+                    with st.expander("预览PDF内容"):
+                        st.text(text[:500] + "...")
+                    with st.spinner("正在分析中..."):
+                        result = analyze_text(text, model)
+                        st.write(result)
+                        
+    else:  # 批量处理PDF
+        uploaded_files = st.file_uploader("选择多个PDF文件", type=['pdf'], accept_multiple_files=True)
+        if uploaded_files and st.button("开始批量分析"):
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            results = {}
+            for i, file in enumerate(uploaded_files):
+                status_text.text(f"正在处理: {file.name}")
+                progress = (i + 1) / len(uploaded_files)
+                progress_bar.progress(progress)
+                
+                with st.expander(f"文件: {file.name}", expanded=False):
+                    text, error = extract_pdf_text(file)
+                    if error:
+                        st.error(f"处理失败: {error}")
+                        continue
+                        
+                    result = analyze_text(text, model)
+                    st.write(result)
+                    results[file.name] = result
+            
+            progress_bar.progress(1.0)
+            status_text.text("处理完成！")
+            
+            # 提供下载分析结果的功能
+            if results:
+                combined_results = "\n\n".join([f"=== {filename} ===\n{content}" 
+                                              for filename, content in results.items()])
+                st.download_button(
+                    label="下载分析结果",
+                    data=combined_results,
+                    file_name="batch_analysis_results.txt",
+                    mime="text/plain"
+                )
 
 if __name__ == "__main__":
     main() 
