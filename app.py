@@ -31,12 +31,12 @@ def initialize_model(api_key):
     """初始化 Gemini 模型"""
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-pro',
+        model = genai.GenerativeModel('gemini-2.0-flash',
                                     generation_config={
-                                        'temperature': 0,
-                                        'top_p': 0.95,
-                                        'top_k': 50,
-                                        'max_output_tokens': 4096,
+                                        'temperature': 0.7,
+                                        'top_p': 0.8,
+                                        'top_k': 40,
+                                        'max_output_tokens': 8192,  # 2.0-flash 支持更大的輸出限制
                                     })
         return model
     except Exception as e:
