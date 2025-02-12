@@ -18,10 +18,10 @@ import io
 try:
     model = genai.GenerativeModel('gemini-1.5-pro',
                                 generation_config={
-                                    'temperature': 0.7,
-                                    'top_p': 0.8,
-                                    'top_k': 40,
-                                    'max_output_tokens': 2048,
+                                    'temperature': 0,
+                                    'top_p': 0.95,
+                                    'top_k': 50,
+                                    'max_output_tokens': 4096,
                                 })
 except Exception as e:
     st.error(f"模型初始化失败: {str(e)}")
@@ -33,10 +33,10 @@ def initialize_model(api_key):
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-1.5-pro',
                                     generation_config={
-                                        'temperature': 0.7,
-                                        'top_p': 0.8,
-                                        'top_k': 40,
-                                        'max_output_tokens': 2048,
+                                        'temperature': 0,
+                                        'top_p': 0.95,
+                                        'top_k': 50,
+                                        'max_output_tokens': 4096,
                                     })
         return model
     except Exception as e:
