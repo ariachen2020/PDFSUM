@@ -14,32 +14,20 @@ from urllib.parse import urlparse
 import PyPDF2
 import io
 
-# 初始化 Gemini 模型
-try:
-    model = genai.GenerativeModel('gemini-1.5-pro',
-                                generation_config={
-                                    'temperature': 0,
-                                    'top_p': 0.95,
-                                    'top_k': 50,
-                                    'max_output_tokens': 4096,
-                                })
-except Exception as e:
-    st.error(f"模型初始化失败: {str(e)}")
-    model = None
-
 def initialize_model(api_key):
     """初始化 Gemini 模型"""
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash',
+        model = genai.GenerativeModel('gemini-2.5-pro',
                                     generation_config={
-                                        'temperature': 0.7,
-                                        'top_p': 0.8,
-                                        'top_k': 40,
-                                        'max_output_tokens': 8192,  # 2.0-flash 支持更大的輸出限制
+                                        'temperature': 0,
+                                        'top_p': 0.95,
+                                        'top_k': 50,
+                                        'max_output_tokens': 8192  # 依需求調整
                                     })
         return model
     except Exception as e:
+        st.error(f"模型初始化失败: {str(e)}")
         return None
 
 def analyze_text(text, model):
@@ -49,7 +37,7 @@ def analyze_text(text, model):
         
     prompt = f"""
     請分析以下文字，並提供:
-    1. 主要摘要 (200字以內)
+    1. 主要摘要 (300字以內)
     2. 關鍵重點 (列點式)
     3. 關鍵字 (以逗號分隔)
     
@@ -162,7 +150,6 @@ def main():
     # 初始化模型
     model = initialize_model(api_key)
     if model is None:
-        st.error("API Key 无效或初始化失败")
         return
     
     # 输入区域
