@@ -34,20 +34,48 @@ def analyze_text(text, model):
     """使用 Gemini 分析文字"""
     if model is None:
         return "模型初始化失败，请检查 API Key"
-        
+
+    # 根據文字長度決定摘要詳細程度
+    text_length = len(text)
+    if text_length < 1000:
+        # 短文本：簡短摘要
+        summary_length = "150-200字"
+        detail_level = "簡要概括主要內容"
+    elif text_length < 5000:
+        # 中等長度：標準摘要
+        summary_length = "400-600字"
+        detail_level = "詳細說明主要內容和重要細節"
+    elif text_length < 15000:
+        # 較長文本：詳細摘要
+        summary_length = "800-1200字"
+        detail_level = "深入分析各個重要章節，包含具體內容和數據"
+    else:
+        # 長文本：完整摘要
+        summary_length = "1500-2500字"
+        detail_level = "全面且詳盡地涵蓋所有重要章節、論點、數據和結論"
+
     prompt = f"""
-    請分析以下文字，並提供:
-    1. 主要摘要 (300字以內)
-    2. 關鍵重點 (列點式)
-    3. 關鍵字 (以逗號分隔)
-    
+    請分析以下文字（共約 {text_length} 字），並提供:
+
+    1. 主要摘要 ({summary_length})
+       - {detail_level}
+       - 保留重要的數據、名詞和專有術語
+       - 如果有章節結構，請按章節摘要
+
+    2. 關鍵重點 (列點式，至少 5-10 點)
+       - 提取最重要的觀點和發現
+       - 包含具體的數據或事實支持
+
+    3. 關鍵字 (10-15個，以逗號分隔)
+       - 選擇最能代表文章主題的關鍵詞
+
     文字內容:
     {text}
     """
-    
+
     max_retries = 3
     retry_delay = 5  # seconds
-    
+
     for attempt in range(max_retries):
         try:
             response = model.generate_content(prompt)
